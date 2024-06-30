@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	numUUIDs   = 10_000_000
-	numWorkers = 1000 // Adjust this number based on your CPU cores and workload
+	numUUIDs = 100_000
+	// numWorkers = 1000 // Adjust this number based on your CPU cores and workload
 )
 
 func generateUUIDs(id int, numUUIDs int, wg *sync.WaitGroup) {
@@ -31,24 +31,36 @@ func generateUUIDs(id int, numUUIDs int, wg *sync.WaitGroup) {
 }
 
 func main() {
-	for curCPUs := 1; curCPUs <= 10; curCPUs++ {
+	var bestTime int64 = 1_000_000_000
+	bestNumWorkers := -1
+	bestNumCPU := -1
+	for CPUs := 1; CPUs <= 10; CPUs++ {
+		for numWorkers := 1; numWorkers <= 100001; numWorkers += 10000 {
+			runtime.GOMAXPROCS(CPUs)
+			start := time.Now()
 
-		// TODO why this code runs faster on less number of CPUs?
-		prevCPUs := runtime.GOMAXPROCS(curCPUs)
-		start := time.Now()
+			var wg sync.WaitGroup
 
-		var wg sync.WaitGroup
+			numUUIDsPerWorker := numUUIDs / numWorkers
 
-		numUUIDsPerWorker := numUUIDs / numWorkers
+			for i := 0; i < numWorkers; i++ {
+				wg.Add(1)
+				go generateUUIDs(i, numUUIDsPerWorker, &wg)
+			}
 
-		for i := 0; i < numWorkers; i++ {
-			wg.Add(1)
-			go generateUUIDs(i, numUUIDsPerWorker, &wg)
+			wg.Wait()
+
+			elapsed := time.Since(start).Milliseconds()
+
+			if elapsed < bestTime {
+				bestTime = elapsed
+				bestNumWorkers = numWorkers
+				bestNumCPU = CPUs
+			}
+
+			// fmt.Printf("Generated %d UUIDs in %v milliseconds, %d CPUs, %v workers\n", numUUIDs, elapsed, CPUs, numWorkers)
+
 		}
-
-		wg.Wait()
-
-		elapsed := time.Since(start)
-		fmt.Printf("Generated %d UUIDs in %s, %d prevCPUs %d curCPUs\n", numUUIDs, elapsed, prevCPUs, curCPUs)
 	}
+	fmt.Printf("To generate %d UUIDs, best time is %v milliseconds, with %v usable CPUs and %v workers", numUUIDs, bestTime, bestNumCPU, bestNumWorkers)
 }
