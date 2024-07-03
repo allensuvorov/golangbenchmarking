@@ -34,9 +34,9 @@ func main() {
 	var bestTime int64 = 1_000_000_000
 	bestNumWorkers := -1
 	bestNumCPU := -1
-	for CPUs := 1; CPUs <= 10; CPUs++ {
-		for numWorkers := 1; numWorkers <= 100001; numWorkers += 10000 {
-			runtime.GOMAXPROCS(CPUs)
+	for CPUs := 4; CPUs <= 4; CPUs++ {
+		for numWorkers := 1; numWorkers <= 100_001; numWorkers += 10_000 {
+			prevCPUs := runtime.GOMAXPROCS(CPUs)
 			start := time.Now()
 
 			var wg sync.WaitGroup
@@ -58,9 +58,9 @@ func main() {
 				bestNumCPU = CPUs
 			}
 
-			// fmt.Printf("Generated %d UUIDs in %v milliseconds, %d CPUs, %v workers\n", numUUIDs, elapsed, CPUs, numWorkers)
+			fmt.Printf("Generated %d UUIDs in %v milli sec, %d prevCPUs, %d CPUs, %v workers\n", numUUIDs, elapsed, prevCPUs, CPUs, numWorkers)
 
 		}
 	}
-	fmt.Printf("To generate %d UUIDs, best time is %v milliseconds, with %v usable CPUs and %v workers", numUUIDs, bestTime, bestNumCPU, bestNumWorkers)
+	fmt.Printf("To generate %d UUIDs, best time is %v milli seconds, with %v usable CPUs and %v workers", numUUIDs, bestTime, bestNumCPU, bestNumWorkers)
 }
